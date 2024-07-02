@@ -7,6 +7,7 @@ const EmployeePage = ()=> {
     const [employeeData, setemployeeData] = useState([]);
     const [employeeEmail, setEmployeeEmail] = useState('');
     const [emplpyeeName, setEmployeeName] = useState('');
+    const [updateId, setUpdateId] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -91,11 +92,50 @@ const EmployeePage = ()=> {
         }
     };
 
+    const editEmployee = (employee)=> {
+        setEmployeeName(employee.name)
+        setEmployeeEmail(employee.email)
+        setUpdateId(employee.id)
+    }
+
+    const updateEmployee = async(e)=>{
+        e.preventDefault();
+        if (updateId === null) return;
+
+        const EmployeeDataSet = { name: emplpyeeName, email: employeeEmail };
+
+        try {
+            const response = await fetch(`http://localhost:5000/employees/edit/employee/${updateId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(EmployeeDataSet),
+            });
+
+            if (response.ok) {
+                console.log('Menu updated:', EmployeeDataSet);
+
+                setEmployeeName('');
+                setEmployeeEmail('');
+                setUpdateId(null);
+
+                const updatedEmployee = await response.json();
+                setemployeeData(employeeData.map(employee => employee.id === updateId ? updatedEmployee : employee));
+            } else {
+                console.error('Failed to update menu');
+            }
+
+        } catch (error) {
+            console.error('Error updating menu:', error);
+        }
+    }
+
     return(
 <div className="employee_main_div">
             <div className="add_employee_div">
                 <h2>ADD EMPLOYEE</h2>
-                <form onSubmit={addEmployee}>
+                <form onSubmit={updateId ? updateEmployee :addEmployee}>
                     <input
                         type='text'
                         placeholder="Name"
@@ -110,7 +150,7 @@ const EmployeePage = ()=> {
                         value={employeeEmail}
                         onChange={handleEmailChange}
                     />
-                    <button type="submit">Add Employee</button>
+                    <button type="submit">{updateId ? "Update Employee " : "Add Employee"}</button>
                 </form>
             </div>
             <div className="show_employee_details">
@@ -121,6 +161,7 @@ const EmployeePage = ()=> {
                             <p>{employee.name}</p>
                             <p>{employee.email}</p>
                             <button onClick={()=>deleteEmployee(employee.id)}>delete</button>
+                            <button onClick={()=>editEmployee(employee)}>Edit</button>
                         </div>
                     ))}
                 </div>

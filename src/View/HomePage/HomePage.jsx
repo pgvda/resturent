@@ -5,6 +5,7 @@ const HomePage = () => {
     const [customerData, setCustomerData] = useState([]);
     const [customerEmail, setCustomerEmail] = useState('');
     const [customerName, setCustomerName] = useState('');
+    const [updateId, setUpdateId] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -88,13 +89,50 @@ const HomePage = () => {
             console.error('Error deleting customer:', error);
         }
     };
+
+    const editCustomer = (customer)=>{
+        setCustomerName(customer.name)
+        setCustomerEmail(customer.email)
+        setUpdateId(customer.id)
+
+    }
+
+    const updateCustomer = async (e) => {
+        e.preventDefault()
+        if(updateId === null) return
+
+        const customerDataSet = {name:customerName, email:customerEmail};
+
+        try{
+            const response = await fetch(`http://localhost:5000/customers/edit/customer/${updateId}`,{
+                method:'PUT',
+                headers:{
+                    'Content-Type': 'application/json'
+                },
+                body:JSON.stringify(customerDataSet),
+            });
+
+            if(response.ok){
+                console.log('Customer update', customerDataSet)
+
+                setCustomerName('')
+                setCustomerEmail('');
+                setUpdateId(null);
+
+                const updatedCustomer = await response.json();
+                setCustomerData(customerData.map(customer => customer.id === updateId ? updatedCustomer : customer));
+            }
+        } catch (error) {
+            console.error('Error with updating data',error);
+        }
+    }
     
 
     return (
         <div className="home_page_main_div">
             <div className="add_customer_div">
                 <h2>ADD CUSTOMER</h2>
-                <form onSubmit={addCustomer}>
+                <form onSubmit={updateId ?updateCustomer: addCustomer}>
                     <input
                         type='text'
                         placeholder="Name"
@@ -109,7 +147,7 @@ const HomePage = () => {
                         value={customerEmail}
                         onChange={handleEmailChange}
                     />
-                    <button type="submit">Add Customer</button>
+                    <button type="submit">{updateId ? "Update Customer" : "Add customer"}</button>
                 </form>
             </div>
             <div className="show_customer_details">
@@ -120,6 +158,7 @@ const HomePage = () => {
                             <p>{customer.name}</p>
                             <p>{customer.email}</p>
                             <button onClick={()=>deleteCustomer(customer.id)}>delete</button>
+                            <button onClick={()=>editCustomer(customer)}>Edit</button>
                         </div>
                     ))}
                 </div>

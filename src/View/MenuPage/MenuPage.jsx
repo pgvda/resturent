@@ -1,10 +1,10 @@
-import { React, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const MenuPage = () => {
-
     const [menuData, setMenuData] = useState([]);
     const [price, setPrice] = useState('');
     const [menuName, setMenuName] = useState('');
+    const [updateId, setUpdateId] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -19,7 +19,7 @@ const MenuPage = () => {
                 if (response.ok) {
                     const data = await response.json();
                     setMenuData(data);
-                    console.log('Customer data:', data);
+                    console.log('Menu data:', data);
                 } else {
                     console.error('Failed to fetch menu data');
                 }
@@ -52,7 +52,7 @@ const MenuPage = () => {
             });
 
             if (response.ok) {
-                console.log('Customer added:', menuDataSet);
+                console.log('Menu added:', menuDataSet);
 
                 setMenuName('');
                 setPrice('');
@@ -79,7 +79,7 @@ const MenuPage = () => {
 
             if (response.ok) {
                 setMenuData(menuData.filter(menu => menu.id !== id));
-                console.log('menu deleted');
+                console.log('Menu deleted');
             } else {
                 console.error('Failed to delete menu');
             }
@@ -88,12 +88,51 @@ const MenuPage = () => {
             console.error('Error deleting menu:', error);
         }
     };
-    
+
+    const editMenu = (menu) => {
+        setMenuName(menu.name);
+        setPrice(menu.price);
+        setUpdateId(menu.id);
+    };
+
+    const updateMenu = async (e) => {
+        e.preventDefault();
+        if (updateId === null) return;
+
+        const menuDataSet = { name: menuName, price: price };
+
+        try {
+            const response = await fetch(`http://localhost:5000/menu/edit/menu/${updateId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(menuDataSet),
+            });
+
+            if (response.ok) {
+                console.log('Menu updated:', menuDataSet);
+
+                setMenuName('');
+                setPrice('');
+                setUpdateId(null);
+
+                const updatedMenu = await response.json();
+                setMenuData(menuData.map(menu => menu.id === updateId ? updatedMenu : menu));
+            } else {
+                console.error('Failed to update menu');
+            }
+
+        } catch (error) {
+            console.error('Error updating menu:', error);
+        }
+    };
+
     return (
         <div className="home_page_main_div">
             <div className="add_customer_div">
-                <h2>ADD ITEM</h2>
-                <form onSubmit={addMenu}>
+                <h2>{updateId ? "EDIT ITEM" : "ADD ITEM"}</h2>
+                <form onSubmit={updateId ? updateMenu : addMenu}>
                     <input
                         type='text'
                         placeholder="Name"
@@ -108,7 +147,7 @@ const MenuPage = () => {
                         value={price}
                         onChange={handlePriceChange}
                     />
-                    <button type="submit">Add Item</button>
+                    <button type="submit">{updateId ? "Update Item" : "Add Item"}</button>
                 </form>
             </div>
             <div className="show_customer_details">
@@ -118,7 +157,8 @@ const MenuPage = () => {
                             <p>{menu.id}</p>
                             <p>{menu.name}</p>
                             <p>{menu.price}/=</p>
-                            <button onClick={() => deleteMenu(menu.id)}>delete</button>
+                            <button onClick={() => deleteMenu(menu.id)}>Delete</button>
+                            <button onClick={() => editMenu(menu)}>Edit</button>
                         </div>
                     ))}
                 </div>
