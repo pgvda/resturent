@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 
 import './EmployeePagestyle.scss'
+import axios from "axios";
+import { API_URL } from "../../Utils/Api";
 
 const EmployeePage = ()=> {
 
@@ -12,19 +14,17 @@ const EmployeePage = ()=> {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/employees/show/employee', {
-                    method: 'GET',
+                const response = await axios.get(`${API_URL}/employees/show/employee`, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setemployeeData(data);
-                    console.log('Customer data:', data);
+                if (response.status === 200) {
+                    setemployeeData(response.data);
+                    console.log('Employee data:', response.data);
                 } else {
-                    console.error('Failed to fetch customer data');
+                    console.error('Failed to fetch employee data');
                 }
             } catch (error) {
                 console.error('Error fetching data from backend:', error);
@@ -43,93 +43,91 @@ const EmployeePage = ()=> {
 
     const addEmployee = async (e) => {
         e.preventDefault();
-        const employeeDataSet = { name: emplpyeeName, email: employeeEmail };
-
+        const employeeDataSet = { employeeName: emplpyeeName, employeeEmail: employeeEmail };
+      
         try {
-            const response = await fetch('http://localhost:5000/employees/add/employee', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(employeeDataSet),
-            });
-
-            if (response.ok) {
-                console.log('Customer added:', employeeDataSet);
-              
-                setEmployeeName('');
-                setEmployeeEmail('');
-                
-                const newEmployee = await response.json();
-                setemployeeData([...employeeDataSet, newEmployee]);
-            } else {
-                console.error('Failed to add customer');
+          const response = await axios.post(`${API_URL}/employees/add/employee`, employeeDataSet, {
+            headers: {
+              'Content-Type': 'application/json'
             }
-
+          });
+      
+          if (response.status === 200) {
+            console.log('Employee added:', response.data);
+      
+            setEmployeeName('');
+            setEmployeeEmail('');
+            
+            const newEmployee = response.data;
+            setemployeeData([...employeeData, newEmployee]);
+          } else {
+            console.error('Failed to add employee');
+          }
+      
         } catch (error) {
-            console.error('Error adding customer:', error);
+          console.error('Error adding employee:', error);
         }
-    };
+      };
+      
 
-    const deleteEmployee = async (id) => {
+      const deleteEmployee = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/employees/delete/employee/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                setemployeeData(employeeData.filter(employee => employee.id !== id));
-                console.log('Customer deleted');
-            } else {
-                console.error('Failed to delete customer');
+          const response = await axios.delete(`${API_URL}/employees/delete/employee/${id}`, {
+            headers: {
+              'Content-Type': 'application/json'
             }
-
+          });
+      
+          if (response.status === 200) {
+            setemployeeData(employeeData.filter(employee => employee._id !== id));
+            console.log('Employee deleted');
+          } else {
+            console.error('Failed to delete employee');
+          }
+      
         } catch (error) {
-            console.error('Error deleting customer:', error);
+          console.error('Error deleting employee:', error);
         }
-    };
+      };
+      
 
     const editEmployee = (employee)=> {
-        setEmployeeName(employee.name)
-        setEmployeeEmail(employee.email)
-        setUpdateId(employee.id)
+        setEmployeeName(employee.employeeName)
+        setEmployeeEmail(employee.employeeEmail)
+        setUpdateId(employee._id)
     }
 
-    const updateEmployee = async(e)=>{
+    const updateEmployee = async (e) => {
         e.preventDefault();
         if (updateId === null) return;
-
-        const EmployeeDataSet = { name: emplpyeeName, email: employeeEmail };
-
+      
+        const employeeDataSet = { employeeName: emplpyeeName, employeeEmail: employeeEmail };
+      
         try {
-            const response = await fetch(`http://localhost:5000/employees/edit/employee/${updateId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(EmployeeDataSet),
-            });
-
-            if (response.ok) {
-                console.log('Menu updated:', EmployeeDataSet);
-
-                setEmployeeName('');
-                setEmployeeEmail('');
-                setUpdateId(null);
-
-                const updatedEmployee = await response.json();
-                setemployeeData(employeeData.map(employee => employee.id === updateId ? updatedEmployee : employee));
-            } else {
-                console.error('Failed to update menu');
+          const response = await axios.put(`${API_URL}/employees/update/employee/${updateId}`, employeeDataSet, {
+            headers: {
+              'Content-Type': 'application/json'
             }
-
+          });
+      
+          if (response.status === 200) {
+            console.log('Employee updated:', employeeDataSet);
+      
+            setEmployeeName('');
+            setEmployeeEmail('');
+            setUpdateId(null);
+      
+            const updatedEmployee = response.data;
+            setemployeeData(employeeData.map(employee => employee._id === updateId ? updatedEmployee : employee));
+          } else {
+            console.error('Failed to update employee');
+          }
+      
         } catch (error) {
-            console.error('Error updating menu:', error);
+          console.error('Error updating employee:', error);
         }
-    }
+      };
+      
 
     return(
 <div className="employee_main_div">
@@ -157,10 +155,10 @@ const EmployeePage = ()=> {
                 <div>
                     {employeeData.map((employee) => (
                         <div className="employee_section" key={employee.id}>
-                            <p>{employee.id}</p>
-                            <p>{employee.name}</p>
-                            <p>{employee.email}</p>
-                            <button onClick={()=>deleteEmployee(employee.id)}>delete</button>
+                            
+                            <p>{employee.employeeName}</p>
+                            <p>{employee.employeeEmail}</p>
+                            <button onClick={()=>deleteEmployee(employee._id)}>delete</button>
                             <button onClick={()=>editEmployee(employee)}>Edit</button>
                         </div>
                     ))}

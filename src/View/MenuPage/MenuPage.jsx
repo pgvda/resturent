@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { API_URL } from "../../Utils/Api";
 
 const MenuPage = () => {
     const [menuData, setMenuData] = useState([]);
@@ -7,19 +9,17 @@ const MenuPage = () => {
     const [updateId, setUpdateId] = useState(null);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchMenuData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/menu/show/menu', {
-                    method: 'GET',
+                const response = await axios.get(`${API_URL}/menus/show/menu`, {
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setMenuData(data);
-                    console.log('Menu data:', data);
+                if (response.status === 200) {
+                    setMenuData(response.data);
+                    console.log('Menu data:', response.data);
                 } else {
                     console.error('Failed to fetch menu data');
                 }
@@ -27,7 +27,8 @@ const MenuPage = () => {
                 console.error('Error fetching data from backend:', error);
             }
         };
-        fetchData();
+
+        fetchMenuData();
     }, []);
 
     const handleNameChange = (e) => {
@@ -40,24 +41,22 @@ const MenuPage = () => {
 
     const addMenu = async (e) => {
         e.preventDefault();
-        const menuDataSet = { name: menuName, price: price };
+        const menuDataSet = { menuName: menuName, menuPrice: price };
 
         try {
-            const response = await fetch('http://localhost:5000/menu/add/menu', {
-                method: 'POST',
+            const response = await axios.post(`${API_URL}/menus/add/menu`, menuDataSet, {
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(menuDataSet),
+                }
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 console.log('Menu added:', menuDataSet);
 
                 setMenuName('');
                 setPrice('');
 
-                const newMenu = await response.json();
+                const newMenu = response.data;
                 setMenuData([...menuData, newMenu]);
             } else {
                 console.error('Failed to add menu');
@@ -67,6 +66,7 @@ const MenuPage = () => {
             console.error('Error adding menu:', error);
         }
     };
+
 
     const deleteMenu = async (id) => {
         try {
@@ -90,9 +90,9 @@ const MenuPage = () => {
     };
 
     const editMenu = (menu) => {
-        setMenuName(menu.name);
-        setPrice(menu.price);
-        setUpdateId(menu.id);
+        setMenuName(menu.menuName);
+        setPrice(menu.menuPrice);
+        setUpdateId(menu._id);
     };
 
     const updateMenu = async (e) => {
@@ -155,9 +155,9 @@ const MenuPage = () => {
                     {menuData.map((menu) => (
                         <div className="customer_section" key={menu.id}>
                             <p>{menu.id}</p>
-                            <p>{menu.name}</p>
-                            <p>{menu.price}/=</p>
-                            <button onClick={() => deleteMenu(menu.id)}>Delete</button>
+                            <p>{menu.menuName}</p>
+                            <p>{menu.menuPrice}/=</p>
+                            <button onClick={() => deleteMenu(menu._id)}>Delete</button>
                             <button onClick={() => editMenu(menu)}>Edit</button>
                         </div>
                     ))}

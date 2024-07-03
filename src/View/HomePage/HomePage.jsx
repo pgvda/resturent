@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import './HomePageStyle.scss';
+import { API_URL } from "../../Utils/Api";
 
 const HomePage = () => {
     const [customerData, setCustomerData] = useState([]);
@@ -9,27 +11,26 @@ const HomePage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                const response = await fetch('http://localhost:5000/customers/show/customer', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setCustomerData(data);
-                    console.log('Customer data:', data);
-                } else {
-                    console.error('Failed to fetch customer data');
-                }
-            } catch (error) {
-                console.error('Error fetching data from backend:', error);
+          try {
+            const response = await axios.get(`${API_URL}/customers/show/customer`, {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+    
+            if (response.status === 200) {
+              setCustomerData(response.data);
+              console.log('Customer data:', response.data);
+            } else {
+              console.error('Failed to fetch customer data');
             }
+          } catch (error) {
+            console.error('Error fetching data from backend:', error);
+          }
         };
+    
         fetchData();
-    }, []);
+      }, []);
 
     const handleNameChange = (e) => {
         setCustomerName(e.target.value);
@@ -41,91 +42,92 @@ const HomePage = () => {
 
     const addCustomer = async (e) => {
         e.preventDefault();
-        const customerDataSet = { name: customerName, email: customerEmail };
-
+        const customerDataSet = { customerName: customerName, customerEmail: customerEmail };
+      
         try {
-            const response = await fetch('http://localhost:5000/customers/add/customer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(customerDataSet),
-            });
-
-            if (response.ok) {
-                console.log('Customer added:', customerDataSet);
-                // Clear the input fields
-                setCustomerName('');
-                setCustomerEmail('');
-                // Refetch the customer data to update the list
-                const newCustomer = await response.json();
-                setCustomerData([...customerData, newCustomer]);
-            } else {
-                console.error('Failed to add customer');
+          const response = await axios.post(`${API_URL}/customers/add/customer`, customerDataSet, {
+            headers: {
+              'Content-Type': 'application/json'
             }
-
+          });
+      
+          if (response.status === 200) {
+            console.log('Customer added:', customerDataSet);
+    
+            setCustomerName('');
+            setCustomerEmail('');
+            
+            setCustomerData([...customerData, response.data]);
+          } else {
+            console.error('Failed to add customer');
+          }
+      
         } catch (error) {
-            console.error('Error adding customer:', error);
+          console.error('Error adding customer:', error);
         }
-    };
-
-    const deleteCustomer = async (id) => {
+      };
+      const deleteCustomer = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/customers/delete/customer/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                setCustomerData(customerData.filter(customer => customer.id !== id));
-                console.log('Customer deleted');
-            } else {
-                console.error('Failed to delete customer');
+          const response = await axios.delete(`${API_URL}/customers/delete/customer/${id}`, {
+            headers: {
+              'Content-Type': 'application/json'
             }
-
+          });
+      
+          if (response.status === 200) {
+            setCustomerData(customerData.filter(customer => customer._id !== id));
+            console.log('Customer deleted');
+          } else {
+            console.error('Failed to delete customer');
+          }
+      
         } catch (error) {
-            console.error('Error deleting customer:', error);
+          console.error('Error deleting customer:', error);
         }
-    };
+      };
 
     const editCustomer = (customer)=>{
-        setCustomerName(customer.name)
-        setCustomerEmail(customer.email)
-        setUpdateId(customer.id)
+        setCustomerName(customer.customerName)
+        setCustomerEmail(customer.customerEmail)
+        setUpdateId(customer._id)
 
     }
 
     const updateCustomer = async (e) => {
-        e.preventDefault()
-        if(updateId === null) return
-
-        const customerDataSet = {name:customerName, email:customerEmail};
-
-        try{
-            const response = await fetch(`http://localhost:5000/customers/edit/customer/${updateId}`,{
-                method:'PUT',
-                headers:{
-                    'Content-Type': 'application/json'
-                },
-                body:JSON.stringify(customerDataSet),
-            });
-
-            if(response.ok){
-                console.log('Customer update', customerDataSet)
-
-                setCustomerName('')
-                setCustomerEmail('');
-                setUpdateId(null);
-
-                const updatedCustomer = await response.json();
-                setCustomerData(customerData.map(customer => customer.id === updateId ? updatedCustomer : customer));
+        e.preventDefault();
+        console.log(updateId);
+        if (updateId === null) return;
+      
+        const customerDataSet = {
+          customerName: customerName,
+          customerEmail: customerEmail,
+          customerPassword: '12345678'
+        };
+      
+        try {
+          const response = await axios.put(`${API_URL}/customers/update/customer/${updateId}`, customerDataSet, {
+            headers: {
+              'Content-Type': 'application/json'
             }
+          });
+      
+          if (response.status === 200) {
+            console.log('Customer updated:', customerDataSet);
+      
+            setCustomerName('');
+            setCustomerEmail('');
+            setUpdateId(null);
+      
+            const updatedCustomer = response.data;
+            setCustomerData(customerData.map(customer => customer._id === updateId ? updatedCustomer : customer));
+          } else {
+            console.error('Failed to update customer');
+          }
         } catch (error) {
-            console.error('Error with updating data',error);
+          console.error('Error with updating data:', error);
         }
-    }
+      };
+      
     
 
     return (
@@ -154,10 +156,9 @@ const HomePage = () => {
                 <div>
                     {customerData.map((customer) => (
                         <div className="customer_section" key={customer.id}>
-                            <p>{customer.id}</p>
-                            <p>{customer.name}</p>
-                            <p>{customer.email}</p>
-                            <button onClick={()=>deleteCustomer(customer.id)}>delete</button>
+                            <p>{customer.customerName}</p>
+                            <p>{customer.customerEmail}</p>
+                            <button onClick={()=>deleteCustomer(customer._id)}>delete</button>
                             <button onClick={()=>editCustomer(customer)}>Edit</button>
                         </div>
                     ))}
