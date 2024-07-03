@@ -67,23 +67,22 @@ const MenuPage = () => {
         }
     };
 
-
     const deleteMenu = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/menu/delete/menu/${id}`, {
-                method: 'DELETE',
+            const response = await axios.delete(`${API_URL}/menus/delete/menu/${id}`, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-
-            if (response.ok) {
+    
+            if (response.status === 200) {
+                
                 setMenuData(menuData.filter(menu => menu.id !== id));
                 console.log('Menu deleted');
             } else {
                 console.error('Failed to delete menu');
             }
-
+    
         } catch (error) {
             console.error('Error deleting menu:', error);
         }
@@ -98,36 +97,33 @@ const MenuPage = () => {
     const updateMenu = async (e) => {
         e.preventDefault();
         if (updateId === null) return;
-
-        const menuDataSet = { name: menuName, price: price };
-
+    
+        const menuDataSet = { menuName: menuName, menuPrice: price };
+    
         try {
-            const response = await fetch(`http://localhost:5000/menu/edit/menu/${updateId}`, {
-                method: 'PUT',
+            const response = await axios.put(`${API_URL}/menus/update/menu/${updateId}`, menuDataSet, {
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(menuDataSet),
+                }
             });
-
-            if (response.ok) {
+    
+            if (response.status === 200) {
                 console.log('Menu updated:', menuDataSet);
-
+    
                 setMenuName('');
                 setPrice('');
                 setUpdateId(null);
-
-                const updatedMenu = await response.json();
+    
+                const updatedMenu = response.data;
                 setMenuData(menuData.map(menu => menu.id === updateId ? updatedMenu : menu));
             } else {
                 console.error('Failed to update menu');
             }
-
+    
         } catch (error) {
             console.error('Error updating menu:', error);
         }
     };
-
     return (
         <div className="home_page_main_div">
             <div className="add_customer_div">
